@@ -30,8 +30,8 @@ from kano_draw.video import play_intro
 from kano_draw.draw import Draw
 import kano_draw.server
 #set default number to 0
-echo '{"level":999,"save_date":"2015-07-08T08:13:38.450890"} ' >~/.kanoprofile/apps/kano-draw/state.json
-
+#FILE='{"level":999,"save_date":"2015-07-08T08:13:38.4508
+#echo -e "{"level":999,"save_date":"2015-07-08T08:13:38.450890"}" /home/seec/.kanoprofile/apps/kano-draw/state.json
 def cleanup(signum, frame):
     sys.exit(0)
 
