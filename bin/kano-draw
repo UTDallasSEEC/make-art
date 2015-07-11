@@ -37,6 +37,11 @@ def cleanup(signum, frame):
 signal.signal(signal.SIGINT, cleanup)
 
 play_intro()
+#increment counter
+with open(r'/var/stats/artstats.txt','r+')as f:
+	value=int(f.read())
+	f.seek(0)
+	f.write(str(value+1))
 
 APP_PID = os.getpid()
 # Initialise the local server
