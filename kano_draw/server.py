@@ -184,9 +184,9 @@ def _save_level(level):
 
 @server.route('/progress', methods=['GET'])
 def _load_level():
-    value = load_app_state_variable(APP_NAME, 'level')
+    #value = load_app_state_variable(APP_NAME, 'level')
     # If every challenge is unlocked, value is 999
-
+    value = 999 #jury rig to allow all levels unlocked at all times for exhibit	
     if value is not None:
         return str(value + 1)
     else:
