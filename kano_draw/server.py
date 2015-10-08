@@ -118,7 +118,7 @@ def _apply_co_packages(dest_dir):
 def _get_co_index_apply_order(fname):
     index_no = None
     # Files names have absolute path
-    if os.path.basename(fname) == 'apply_index.json':
+    if os.path.basename(fname) == 'index.json':
         try:
             index_fh = open(fname)
         except (IOError, OSError) as exc:
@@ -187,7 +187,7 @@ def _save(data):
 
 
 _copy_package_assets()
-# _apply_co_packages()
+_apply_co_packages(STATIC_ASSET_DIR)
 server = Flask(__name__, static_folder=_get_static_dir(), static_url_path='/')
 server_logger = logging.getLogger('werkzeug')
 server_logger.setLevel(logging.ERROR)
