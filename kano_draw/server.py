@@ -13,6 +13,7 @@ from kano_world.functions import login_using_token
 from kano_world.share import upload_share
 from kano.network import is_internet
 from kano.utils import play_sound
+from kano.logging import import logger
 
 
 APP_NAME = 'kano-draw'
@@ -20,18 +21,117 @@ PARENT_PID = None
 
 CHALLENGE_DIR = os.path.expanduser('~/Draw-content')
 WALLPAPER_DIR = os.path.join(CHALLENGE_DIR, 'wallpapers')
+STATIC_ASSET_DIR = os.path.join(os.path.expanduser('~'),
+                                '.make-art-assets')
 
 ensure_dir(CHALLENGE_DIR)
 ensure_dir(WALLPAPER_DIR)
+ensure_dir(STATIC_ASSET_DIR)
 
 
-def _get_static_dir():
+def _copy_package_assets():
+    src_dir = _get_package_static_dir()
+    dest_dir = STATIC_ASSET_DIR
+    for dir_entry in os.listdir(src_dir):
+        src_file = os.path.abspath(os.path.join(src_dir, dir_entry))
+        dest_file = os.path.abspath(os.path.join(dest_dir, dir_entry))
+        os.symlink(src_file, dest_file)
+
+
+def _get_package_static_dir():
     bin_path = os.path.abspath(os.path.dirname(__file__))
 
     if bin_path.startswith('/usr'):
         return '/usr/share/kano-draw'
     else:
         return os.path.abspath(os.path.join(bin_path, '../www'))
+
+def _get_co_assets():
+    from kano_content.api import import ContentManager
+
+    cm = ContentManager.from_local()
+
+    co_index = {}
+
+    for co in cm.list_local_objects(spec='make-art-assets'):
+        co_files = co.get_data('').get_content()
+        if len(co_files) != 2:
+            logger.warning(
+                'Count of files other than 2 in co[{}], skipping'.format(
+                    co.get_data('').get_dir()
+                )
+            )
+            continue
+
+        # Check whether the first file is the index
+        index_no = _get_co_index_apply_order(co_files[0])
+        if index_no is not None:
+            co_index[index_no] = co_files[1]
+        else:
+            # It wasn't the first one, go for the second one
+            index_no = _get_co_index_apply_order(co_files[1])
+            if index_no is not None:
+                co_index[index_no] = co_files[0]
+            else:
+                err_msg = 'None of the files contained in co have apply index'
+                logger.error(err_msg)
+                continue
+
+    return co_index
+
+def _apply_co_packages(dest_dir):
+    import tarfile
+
+    co_index = _get_co_assets()
+
+    for order in sorted(co_index.iterkeys()):
+        tar_file = co_index[order]
+        try:
+            tarball = tarfile.open(tar_file)
+            tarball.extractall(dest_dir)
+        except (IOError, OSError) as exc:
+            err_msg = 'Error opening file "{}", [{}]'.format(tar_file, exc)
+            logger.error(err_msg)
+            continue
+        except tarfile.ReadError as exc:
+            err_msg = 'Error parsing tarfile "{}", [{}]'.format(tar_file, exc)
+            logger.error(err_msg)
+            continue
+
+
+def _get_co_index_apply_order(fname):
+    index_no = None
+    # Files names have absolute path
+    if os.path.basename(co_files[0]) == 'apply_index.json':
+        try:
+            index_fh = open(co_files[0])
+        except (IOError, OSError) as exc:
+            err_msg = 'Error opening file "{}". [{}]'.format(
+                co_files[0],
+                exc
+            )
+            logger.error(err_msg)
+        else:
+            with index_fh:
+                try:
+                    ind_data = json.load(index_fh)
+                    index_no = ind_data['apply_order']
+                except KeyError as exc:
+                    err_msg = ("JSON in '{}' doesn't contain right key: "
+                               "[{}]").format(co_files[0], exc)
+                    logger.error(err_msg)
+                except ValueError as exc:
+                    err_msg = 'File "{}" is not a valid JSON: [{}]'.format(
+                        co_files[0],
+                        exc
+                    )
+                    logger.error(err_msg)
+    return index_no
+
+
+
+def _get_static_dir():
+    return STATIC_ASSET_DIR
 
 def _get_image_from_str(img_str):
     import base64
