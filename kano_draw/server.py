@@ -3,6 +3,7 @@ import json
 import os
 import time
 import logging
+import shutil
 
 from kano.utils import ensure_dir
 from kano_profile.badges import save_app_state_variable_with_dialog, \
@@ -32,6 +33,19 @@ ensure_dir(STATIC_ASSET_DIR)
 def _copy_package_assets():
     src_dir = _get_package_static_dir()
     dest_dir = STATIC_ASSET_DIR
+
+    # First Clear this cache
+    for existing_file in os.listdir(dest_dir):
+        cur_file = os.path.abspath(os.path.join(dest_dir, existing_file))
+        if os.path.islink(cur_file):
+            os.unlink(cur_file)
+        else:
+            if os.path.isdir(cur_file):
+                shutil.rmtree(cur_file)
+            else:
+                os.remove(cur_file)
+
+    # Now symlink the static assets
     for dir_entry in os.listdir(src_dir):
         src_file = os.path.abspath(os.path.join(src_dir, dir_entry))
         dest_file = os.path.abspath(os.path.join(dest_dir, dir_entry))
@@ -45,6 +59,7 @@ def _get_package_static_dir():
         return '/usr/share/kano-draw'
     else:
         return os.path.abspath(os.path.join(bin_path, '../www'))
+
 
 def _get_co_assets():
     from kano_content.api import ContentManager
@@ -79,6 +94,7 @@ def _get_co_assets():
 
     return co_index
 
+
 def _apply_co_packages(dest_dir):
     import tarfile
 
@@ -102,12 +118,12 @@ def _apply_co_packages(dest_dir):
 def _get_co_index_apply_order(fname):
     index_no = None
     # Files names have absolute path
-    if os.path.basename(co_files[0]) == 'apply_index.json':
+    if os.path.basename(fname) == 'apply_index.json':
         try:
-            index_fh = open(co_files[0])
+            index_fh = open(fname)
         except (IOError, OSError) as exc:
             err_msg = 'Error opening file "{}". [{}]'.format(
-                co_files[0],
+                fname,
                 exc
             )
             logger.error(err_msg)
@@ -118,16 +134,15 @@ def _get_co_index_apply_order(fname):
                     index_no = ind_data['apply_order']
                 except KeyError as exc:
                     err_msg = ("JSON in '{}' doesn't contain right key: "
-                               "[{}]").format(co_files[0], exc)
+                               "[{}]").format(fname, exc)
                     logger.error(err_msg)
                 except ValueError as exc:
                     err_msg = 'File "{}" is not a valid JSON: [{}]'.format(
-                        co_files[0],
+                        fname,
                         exc
                     )
                     logger.error(err_msg)
     return index_no
-
 
 
 def _get_static_dir():
@@ -171,6 +186,8 @@ def _save(data):
     return (filename, filepath)
 
 
+_copy_package_assets()
+# _apply_co_packages()
 server = Flask(__name__, static_folder=_get_static_dir(), static_url_path='/')
 server_logger = logging.getLogger('werkzeug')
 server_logger.setLevel(logging.ERROR)
