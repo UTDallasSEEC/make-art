@@ -13,7 +13,7 @@ from kano_world.functions import login_using_token
 from kano_world.share import upload_share
 from kano.network import is_internet
 from kano.utils import play_sound
-from kano.logging import import logger
+from kano.logging import logger
 
 
 APP_NAME = 'kano-draw'
@@ -47,7 +47,7 @@ def _get_package_static_dir():
         return os.path.abspath(os.path.join(bin_path, '../www'))
 
 def _get_co_assets():
-    from kano_content.api import import ContentManager
+    from kano_content.api import ContentManager
 
     cm = ContentManager.from_local()
 
