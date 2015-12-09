@@ -13,7 +13,7 @@ var gulp = require('gulp'),
     nib = require('nib');
 
 var server = lr(),
-    env = process.env.NODE_ENV || 'development',
+    env = process.env.NODE_ENV || 'production',
     production = env === 'production',
     segmentioId = process.env.SEGMENTIO_ID || null,
     facebookAppId = process.env.FACEBOOK_APP_ID || null,
